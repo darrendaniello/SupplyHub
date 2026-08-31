@@ -1,0 +1,6 @@
+python-fasthtml
+sqlalchemy
+psycopg[binary]
+geoalchemy2
+shapely
+python-dotenv
