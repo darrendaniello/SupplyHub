@@ -9,6 +9,7 @@ from app.models.order_item import OrderItem
 from app.models.favorite import Favorite
 from app.models.sales_history import SalesHistory
 from app.models.search_log import SearchLog
+from app.models.review import Review
 
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "Favorite",
     "SalesHistory",
     "SearchLog",
+    "Review",
 ]

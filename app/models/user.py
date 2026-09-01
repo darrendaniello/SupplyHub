@@ -66,3 +66,9 @@ class User(Base):
         "SearchLog",
         back_populates="user",
     )
+
+    reviews = relationship(
+        "Review",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

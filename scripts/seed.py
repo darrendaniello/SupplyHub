@@ -19,6 +19,7 @@ from app.models import (
     SalesHistory,
     SearchLog,
     User,
+    Review,
 )
 
 
@@ -818,6 +819,135 @@ def seed_search_logs(session: Session, users):
                 )
             )
 
+# ============================================================
+# REVIEWS
+# ============================================================
+
+def seed_reviews(session: Session, users, products):
+    reviews_data = [
+        {
+            "email": "buyer1@supplyhub.test",
+            "product": "Beras Premium 25kg",
+            "rating": 5,
+            "comment": "Kualitas beras sangat bagus dan sesuai dengan deskripsi.",
+        },
+        {
+            "email": "buyer2@supplyhub.test",
+            "product": "Beras Premium 25kg",
+            "rating": 4,
+            "comment": "Kualitas bagus dan pengiriman cukup cepat.",
+        },
+        {
+            "email": "buyer3@supplyhub.test",
+            "product": "Beras Premium 25kg",
+            "rating": 5,
+            "comment": "Beras cocok untuk kebutuhan restoran.",
+        },
+        {
+            "email": "buyer4@supplyhub.test",
+            "product": "Beras Premium 25kg",
+            "rating": 4,
+            "comment": "Produk bagus dan kemasannya aman.",
+        },
+        {
+            "email": "buyer5@supplyhub.test",
+            "product": "Beras Premium 25kg",
+            "rating": 5,
+            "comment": "Sangat puas dengan kualitas produknya.",
+        },
+
+        {
+            "email": "buyer1@supplyhub.test",
+            "product": "Tepung Terigu 25kg",
+            "rating": 5,
+            "comment": "Tepung bagus untuk kebutuhan produksi.",
+        },
+        {
+            "email": "buyer3@supplyhub.test",
+            "product": "Tepung Terigu 25kg",
+            "rating": 4,
+            "comment": "Kualitas sesuai dengan harga.",
+        },
+        {
+            "email": "buyer5@supplyhub.test",
+            "product": "Tepung Terigu 25kg",
+            "rating": 5,
+            "comment": "Cocok untuk kebutuhan bakery.",
+        },
+
+        {
+            "email": "buyer1@supplyhub.test",
+            "product": "Beras Medium 25kg",
+            "rating": 4,
+            "comment": "Kualitas cukup baik untuk kebutuhan usaha.",
+        },
+        {
+            "email": "buyer2@supplyhub.test",
+            "product": "Beras Medium 25kg",
+            "rating": 5,
+            "comment": "Harga dan kualitas sangat seimbang.",
+        },
+        {
+            "email": "buyer4@supplyhub.test",
+            "product": "Beras Medium 25kg",
+            "rating": 4,
+            "comment": "Produk sesuai pesanan.",
+        },
+
+        {
+            "email": "buyer2@supplyhub.test",
+            "product": "Telur Ayam 30kg",
+            "rating": 5,
+            "comment": "Telur segar dan kualitasnya bagus.",
+        },
+        {
+            "email": "buyer3@supplyhub.test",
+            "product": "Telur Ayam 30kg",
+            "rating": 5,
+            "comment": "Sangat cocok untuk kebutuhan catering.",
+        },
+        {
+            "email": "buyer5@supplyhub.test",
+            "product": "Telur Ayam 30kg",
+            "rating": 4,
+            "comment": "Kualitas bagus dan pengiriman aman.",
+        },
+
+        {
+            "email": "buyer1@supplyhub.test",
+            "product": "Food Container 500ml",
+            "rating": 5,
+            "comment": "Kemasan kuat dan cocok untuk usaha makanan.",
+        },
+        {
+            "email": "buyer4@supplyhub.test",
+            "product": "Food Container 500ml",
+            "rating": 4,
+            "comment": "Kualitas cukup bagus untuk kebutuhan packaging.",
+        },
+    ]
+
+    for data in reviews_data:
+        user = users[data["email"]]
+        product = products[data["product"]]
+
+        existing = session.scalar(
+            select(Review).where(
+                Review.user_id == user.id,
+                Review.product_id == product.id,
+            )
+        )
+
+        if not existing:
+            session.add(
+                Review(
+                    user_id=user.id,
+                    product_id=product.id,
+                    rating=data["rating"],
+                    comment=data["comment"],
+                )
+            )
+
 
 # ============================================================
 # MAIN
@@ -825,9 +955,6 @@ def seed_search_logs(session: Session, users):
 
 def seed_database():
     print("Starting SupplyHub database seed...")
-
-    # Make sure tables exist.
-    Base.metadata.create_all(bind=engine)
 
     with Session(engine) as session:
         try:
@@ -862,6 +989,12 @@ def seed_database():
             session.flush()
 
             seed_favorites(
+                session,
+                users,
+                products,
+            )
+
+            seed_reviews(
                 session,
                 users,
                 products,

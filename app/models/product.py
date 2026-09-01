@@ -105,6 +105,12 @@ class Product(Base):
         back_populates="product",
     )
 
+    reviews = relationship(
+        "Review",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )
+
     __table_args__ = (
         CheckConstraint(
             "minimum_order > 0",
