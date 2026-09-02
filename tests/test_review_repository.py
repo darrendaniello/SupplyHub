@@ -100,40 +100,6 @@ def test_create_review():
     finally:
         session.close()
 
-def test_update_review():
-    session = SessionLocal()
-
-    try:
-        repository = ReviewRepository(session)
-
-        review = repository.get_by_user_and_by_product(
-            user_id=1,
-            product_id=1,
-        )
-
-        if not review:
-            print("\nReview not found.")
-            return
-
-        print("\nBefore update:")
-        print(f"Rating: {review.rating}")
-        print(f"Comment: {review.comment}")
-
-        updated_review = repository.update(
-            review=review,
-            rating=4,
-            comment="Produk bagus, tetapi masih bisa ditingkatkan.",
-        )
-
-        session.commit()
-
-        print("\nAfter update:")
-        print(f"Rating: {updated_review.rating}")
-        print(f"Comment: {updated_review.comment}")
-
-    finally:
-        session.close()
-
 def test_delete_review():
     session = SessionLocal()
 
@@ -169,5 +135,4 @@ if __name__ == "__main__":
     # test_get_review_count()
     test_get_by_user_and_by_product()
     # test_create_review()
-    # test_update_review()
     test_delete_review()

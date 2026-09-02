@@ -62,19 +62,6 @@ class ReviewRepository:
 
         return review
 
-    def update(
-        self,
-        review: Review,
-        rating: int,
-        comment: str | None = None,
-    ):
-        review.rating = rating
-        review.comment = comment
-
-        self.session.flush()
-
-        return review
-
     def delete(self, review: Review):
         self.session.delete(review)
         self.session.flush()
