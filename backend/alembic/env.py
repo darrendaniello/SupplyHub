@@ -21,6 +21,8 @@ from app.models import (
     Favorite,
     SalesHistory,
     SearchLog,
+    Cart,
+    CartItem,
 )
 
 # load environment variables from .env

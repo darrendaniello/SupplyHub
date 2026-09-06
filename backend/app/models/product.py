@@ -111,6 +111,11 @@ class Product(Base):
         cascade="all, delete-orphan",
     )
 
+    cart_items = relationship(
+        "CartItem",
+        back_populates="product",
+    )
+
     __table_args__ = (
         CheckConstraint(
             "minimum_order > 0",

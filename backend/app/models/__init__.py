@@ -10,7 +10,7 @@ from app.models.favorite import Favorite
 from app.models.sales_history import SalesHistory
 from app.models.search_log import SearchLog
 from app.models.review import Review
-
+from app.models.cart import Cart, CartItem
 
 __all__ = [
     "User",
@@ -25,4 +25,6 @@ __all__ = [
     "SalesHistory",
     "SearchLog",
     "Review",
+    "Cart",
+    "CartItem",
 ]
