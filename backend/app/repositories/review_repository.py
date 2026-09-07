@@ -7,6 +7,13 @@ class ReviewRepository:
     def __init__(self, session: Session):
         self.session = session
 
+    def get_by_id(self, review_id: int):
+        stmt = select(Review).where(
+            Review.id == review_id
+        )
+
+        return self.session.scalar(stmt)
+
     def get_by_product(self, product_id: int):
         stmt = (
             select(Review).where(
