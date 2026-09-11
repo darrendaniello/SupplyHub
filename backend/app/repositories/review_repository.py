@@ -1,5 +1,5 @@
 from sqlalchemy import select, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models import Review
 
@@ -16,13 +16,14 @@ class ReviewRepository:
 
     def get_by_product(self, product_id: int):
         stmt = (
-            select(Review).where(
-                Review.product_id == product_id
-            ).order_by(Review.created_at.desc())
+            select(Review)
+            .options(joinedload(Review.user))
+            .where(Review.product_id == product_id)
+            .order_by(Review.created_at.desc())
         )
 
         return self.session.scalars(stmt).all()
-
+    
     def get_average_rating(self, product_id: int):
         stmt = (
             select(func.avg(Review.rating))
