@@ -5,7 +5,7 @@ from app.database import SessionLocal
 from app.services.product_service import ProductService
 from app.services.category_service import CategoryService
 from app.services.review_service import ReviewService
-from app.services.cart_service import CartService
+from app.utils.formatter import format_rupiah
 
 def product_routes(rt):
 
@@ -27,7 +27,7 @@ def product_routes(rt):
                     Div(
                         H3(product.name),
                         P(f"Business: {product.business.business_name}"),
-                        P(f"Price: Rp{product.selling_price} / {product.unit}"),
+                        P(f"Price: {format_rupiah(product.selling_price)} / {product.unit}"),
                         P(f"Minimum order: {product.minimum_order}"),
                         A(
                             "View detail",
@@ -93,7 +93,7 @@ def product_routes(rt):
                     Div(
                         H3(product.name),
                         P(f"Business: {product.business.business_name}"),
-                        P(f"Price: Rp{product.selling_price} / {product.unit}"),
+                        P(f"Price: {format_rupiah(product.selling_price)} / {product.unit}"),
                         A(
                             "View detail",
                             href=f"/products/{product.id}"
@@ -165,7 +165,7 @@ def product_routes(rt):
                     Div(
                         H3(product.name),
                         P(f"Business: {product.business.business_name}"),
-                        P(f"Price: Rp{product.selling_price} / {product.unit}"),
+                        P(f"Price: {format_rupiah(product.selling_price)} / {product.unit}"),
                         A(
                             "View detail",
                             href=f"/products/{product.id}",
@@ -236,7 +236,7 @@ def product_routes(rt):
                 H1(product.name),
                 P(f"Business: {product.business.business_name}"),
                 P(product.description or "No description available."),
-                P(f"Price: Rp{product.selling_price} / {product.unit}"),
+                P(f"Price: {format_rupiah(product.selling_price)} / {product.unit}"),
                 P(f"Minimum order: {product.minimum_order}"),
                 P(f"Available stock: {available_quantity}"),
                 Form(

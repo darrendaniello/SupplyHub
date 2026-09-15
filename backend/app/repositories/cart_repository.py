@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.cart import Cart, CartItem
 
@@ -57,6 +57,7 @@ class CartRepository:
     def get_items_by_cart(self, cart_id: int):
         stmt = (
             select(CartItem)
+            .options(joinedload(CartItem.product))
             .where(CartItem.cart_id == cart_id)
             .order_by(CartItem.id)
         )
