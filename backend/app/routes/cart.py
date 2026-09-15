@@ -102,6 +102,8 @@ def cart_routes(rt):
 
                 A("Proceed to checkout", href="/checkout"),
                 Br(),
+                A("My Orders", href="/orders"),
+                Br(),
                 A("Continue shopping", href="/products"),
             )
 
@@ -276,7 +278,7 @@ def cart_routes(rt):
         finally:
             session.close()
 
-    @rt("/checkout")
+    @rt("/checkout", methods=["GET"])
     def checkout_page(request):
         session = SessionLocal()
 
@@ -346,12 +348,14 @@ def cart_routes(rt):
                     method="post",
                 ),
                 A("Back to cart", href="/cart"),
+                Br(),
+                A("My Orders", href="/orders"),
             )
             
         finally:
             session.close()
 
-    @rt("/checkout", methods=["post"])
+    @rt("/checkout", methods=["POST"])
     def checkout_submit(
         request,
         shipping_address: str,
@@ -377,7 +381,7 @@ def cart_routes(rt):
             session.commit()
 
             return RedirectResponse(
-                f"/orders/{order.id}",
+                "/orders",
                 status_code=303,
             )
 

@@ -133,6 +133,9 @@ def auth_routes(rt):
 
             request.session["user_id"] = user.id
 
+            print("LOGIN USER ID:", user.id)
+            print("SESSION USER ID:", request.session.get("user_id"))
+
             return Titled(
                 "Login Successful - SupplyHub",
                 H1("Login successful"),
@@ -193,4 +196,13 @@ def auth_routes(rt):
                 action="/login",
                 method="post",
             ),
+        )
+
+    @rt("/logout")
+    def logout(request):
+        request.session.clear()
+
+        return RedirectResponse(
+            "/login",
+            status_code=303,
         )

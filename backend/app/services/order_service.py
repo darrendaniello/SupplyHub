@@ -21,6 +21,10 @@ class OrderService:
         if order is None:
             raise ValueError("Order not found")
 
+        print("DETAIL USER ID:", user_id)
+        print("ORDER BUYER ID:", order.buyer_id)
+        print("ORDER ID:", order.id)
+
         if order.buyer_id != user_id:
             raise ValueError("Order does not belong to this user")
 
@@ -64,12 +68,21 @@ class OrderService:
                     f"Invalid quantity for product: {product.name}"
                 )
 
-            if product.stock < cart_item.quantity:
+            if product.inventory is None:
+                raise ValueError(
+                    f"Inventory not found for product: {product.name}"
+                )
+
+            if (
+                product.inventory.stock_quantity
+                - product.inventory.reserved_quantity
+                < cart_item.quantity
+            ):
                 raise ValueError(
                     f"Insufficient stock for product: {product.name}"
                 )
 
-            current_supplier_id = product.supplier_business_id
+            current_supplier_id = product.business_id
 
             if supplier_business_id is None:
                 supplier_business_id = current_supplier_id
@@ -96,7 +109,7 @@ class OrderService:
             raise ValueError("Supplier business not found")
 
         order = self.order_repository.create(
-            buyer_id=user_id,
+            buyer_id=int(user_id),
             supplier_business_id=supplier_business_id,
             shipping_address=shipping_address,
             total_amount=total_amount,
@@ -107,12 +120,12 @@ class OrderService:
                 order_id=order.id,
                 product_id=item_data["product_id"],
                 quantity=item_data["quantity"],
-                price=item_data["price"],
+                unit_price=item_data["price"],
                 subtotal=item_data["subtotal"],
             )
 
             product = item_data["product"]
-            product.stock -= item_data["quantity"]
+            product.inventory.stock_quantity -= item_data["quantity"]
 
         for cart_item in cart_items:
             self.cart_repository.delete_item(cart_item)
