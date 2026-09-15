@@ -23,12 +23,14 @@ class OrderRepository:
             self,
             buyer_id: int,
             supplier_business_id: int,
+            shipping_address: str,
             total_amount: Decimal,
             status: str = "PENDING"
     ):
         order = Order(
             buyer_id = buyer_id,
             supplier_business_id = supplier_business_id,
+            shipping_address = shipping_address,
             total_amount = total_amount,
             status = status,
         )

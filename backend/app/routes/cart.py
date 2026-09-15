@@ -2,6 +2,7 @@ from fasthtml.common import *
 
 from app.database import SessionLocal
 from app.services.cart_service import CartService
+from app.services.order_service import OrderService
 from app.utils.formatter import format_rupiah
 
 
@@ -347,5 +348,60 @@ def cart_routes(rt):
                 A("Back to cart", href="/cart"),
             )
             
+        finally:
+            session.close()
+
+    @rt("/checkout", methods=["post"])
+    def checkout_submit(
+        request,
+        shipping_address: str,
+    ):
+        session = SessionLocal()
+
+        try:
+            user_id = request.session.get("user_id")
+
+            if not user_id:
+                return RedirectResponse(
+                    "/login",
+                    status_code=303,
+                )
+
+            order_service = OrderService(session)
+
+            order = order_service.create_order(
+                user_id=int(user_id),
+                shipping_address=shipping_address,
+            )
+
+            session.commit()
+
+            return RedirectResponse(
+                f"/orders/{order.id}",
+                status_code=303,
+            )
+
+        except ValueError as error:
+            session.rollback()
+
+            return Titled(
+                "Checkout Error",
+                H1("Checkout failed"),
+                P(str(error)),
+                A("Back to checkout", href="/checkout"),
+            )
+
+        except Exception as error:
+            session.rollback()
+
+            print("CHECKOUT ERROR:", repr(error))
+
+            return Titled(
+                "Checkout Error",
+                H1("Something went wrong"),
+                P("Unable to place your order."),
+                A("Back to checkout", href="/checkout"),
+            )
+
         finally:
             session.close()

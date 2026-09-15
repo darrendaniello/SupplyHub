@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Numeric, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -19,6 +19,11 @@ class Order(Base):
 
     supplier_business_id: Mapped[int] = mapped_column(
         ForeignKey("businesses.id"),
+        nullable=False,
+    )
+
+    shipping_address: Mapped[str] = mapped_column(
+        Text,
         nullable=False,
     )
 
