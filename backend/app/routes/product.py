@@ -5,6 +5,7 @@ from app.database import SessionLocal
 from app.services.product_service import ProductService
 from app.services.category_service import CategoryService
 from app.services.review_service import ReviewService
+from app.services.favorite_service import FavoriteService
 from app.utils.formatter import format_rupiah
 
 def product_routes(rt):
@@ -302,12 +303,23 @@ def product_routes(rt):
             session.close()
 
     @rt("/products/{product_id}", methods=["GET"])
-    def product_detail_page(product_id: int):
+    def product_detail_page(request, product_id: int):
         session = SessionLocal()
 
         try:
             product_service = ProductService(session)
             review_service = ReviewService(session)
+            favorite_service = FavoriteService(session)
+
+            user_id = request.session.get("user_id")
+
+            is_favorite = False
+
+            if user_id:
+                is_favorite = favorite_service.is_favorite(
+                    user_id = int(user_id),
+                    product_id = product_id,
+                )
 
             product_result = product_service.get_product_detail(product_id)
             review_result = review_service.get_product_reviews(product_id)
@@ -326,6 +338,22 @@ def product_routes(rt):
                 P(f"Price: {format_rupiah(product.selling_price)} / {product.unit}"),
                 P(f"Minimum order: {product.minimum_order}"),
                 P(f"Available stock: {available_quantity}"),
+
+                Form(
+                    Button(
+                        "Remove from Favorites"
+                        if is_favorite
+                        else "Add to Favorites",
+                        type="submit",
+                    ),
+                    action=(
+                        f"/products/{product.id}/favorite/remove"
+                        if is_favorite
+                        else f"/products/{product.id}/favorite"
+                    ),
+                    method="post",
+                ),
+
                 Form(
                     Input(
                         type="hidden",
@@ -348,6 +376,7 @@ def product_routes(rt):
                     action="/cart/add",
                     method="post",
                 ),
+                
                 H2("Customer Reviews"),
                 Div(
                     H3("Average Rating"),

@@ -4,6 +4,7 @@ from app.routes.auth import auth_routes
 from app.routes.product import product_routes
 from app.routes.cart import cart_routes
 from app.routes.order import order_routes
+from app.routes.favorite import favorite_routes
 
 
 app, rt = fast_app(secret_key="supplyhub-secret-key")
@@ -25,6 +26,8 @@ def home():
         Br(),
         A("Orders", href="/orders"),
         Br(),
+        A("My Favorites", href="/favorites"),
+        Br(),
         A("Logout", href="/logout"),
     )
 
@@ -33,3 +36,4 @@ auth_routes(rt)
 product_routes(rt)
 cart_routes(rt)
 order_routes(rt)
+favorite_routes(rt)
