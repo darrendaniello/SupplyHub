@@ -10,14 +10,34 @@ from app.utils.formatter import format_rupiah
 def product_routes(rt):
 
     @rt("/products")
-    def products_page():
+    def products_page(
+        keyword: str = "",
+        category_id: str = "",
+        min_price: str = "",
+        max_price: str = "",
+        min_rating: str = "",
+        sort_by: str = "",
+    ):
         session = SessionLocal()
 
         try:
             product_service = ProductService(session)
             category_service = CategoryService(session)
 
-            products = product_service.get_available_products()
+            parsed_category_id = int(category_id) if category_id else None
+            parsed_min_price = float(min_price) if min_price else None
+            parsed_max_price = float(max_price) if max_price else None
+            parsed_min_rating = float(min_rating) if min_rating else None
+
+            products = product_service.filter_products(
+                keyword=keyword,
+                category_id=parsed_category_id,
+                min_price=parsed_min_price,
+                max_price=parsed_max_price,
+                min_rating=parsed_min_rating,
+                sort_by=sort_by or None,
+            )
+
             categories = category_service.get_all_categories()
 
             product_cards = []
@@ -44,33 +64,100 @@ def product_routes(rt):
                     Input(
                         name="keyword",
                         placeholder="Search product...",
+                        value=keyword,
                     ),
-                    Button("Search"),
-                    action="/products/search",
-                    method="get",
-                ),
-                Form(
-                    Label("Choose category"),
+
+                    Label("Category"),
                     Select(
-                        Option("All categories", value=""),
+                        Option(
+                            "All categories",
+                            value="",
+                            selected=(category_id == ""),
+                        ),
                         *[
                             Option(
                                 category.name,
                                 value=str(category.id),
+                                selected=(category_id == str(category.id)),
                             )
                             for category in categories
                         ],
                         name="category_id",
-                        onchange="this.form.submit()",
                     ),
-                    action="/products/category",
+
+                    Label("Minimum price"),
+                    Input(
+                        type="number",
+                        name="min_price",
+                        placeholder="Minimum price",
+                        value=min_price,
+                        min="0",
+                    ),
+
+                    Label("Maximum price"),
+                    Input(
+                        type="number",
+                        name="max_price",
+                        placeholder="Maximum price",
+                        value=max_price,
+                        min="0",
+                    ),
+
+                    Label("Minimum rating"),
+                    Select(
+                        Option(
+                            "All ratings",
+                            value="",
+                            selected=(min_rating == ""),
+                        ),
+                        Option(
+                            "4+ stars",
+                            value="4",
+                            selected=(min_rating == "4"),
+                        ),
+                        Option(
+                            "5 stars",
+                            value="5",
+                            selected=(min_rating == "5"),
+                        ),
+                        name="min_rating",
+                    ),
+
+                    Label("Sort by"),
+                    Select(
+                        Option(
+                            "Name",
+                            value="",
+                            selected=(sort_by == ""),
+                        ),
+                        Option(
+                            "Price: Low to High",
+                            value="price_asc",
+                            selected=(sort_by == "price_asc"),
+                        ),
+                        Option(
+                            "Price: High to Low",
+                            value="price_desc",
+                            selected=(sort_by == "price_desc"),
+                        ),
+                        Option(
+                            "Highest Rating",
+                            value="rating",
+                            selected=(sort_by == "rating"),
+                        ),
+                        name="sort_by",
+                    ),
+
+                    Button("Apply Filters", type="submit"),
+
+                    action="/products",
                     method="get",
                 ),
                 Div(
                     *product_cards,
                     cls="product-list"
                 )
-            )
+            ),
 
         finally:
             session.close()
@@ -317,7 +404,7 @@ def product_routes(rt):
                     action=f"/products/{product.id}/reviews",
                     method="post",
                 ),
-                
+
                 A("Back to products", href="/products"),
             )
 

@@ -17,6 +17,30 @@ class ProductService:
 
         return self.product_repository.search(keyword.strip())
 
+    def filter_products(
+        self,
+        keyword: str | None = None,
+        category_id: int | None = None,
+        min_price: float | None = None,
+        max_price: float | None = None,
+        min_rating: float | None = None,
+        sort_by: str | None = None,
+    ):
+        if keyword is not None:
+            keyword = keyword.strip()
+
+        if keyword == "":
+            keyword = None
+
+        return self.product_repository.filter_products(
+            keyword=keyword,
+            category_id=category_id,
+            min_price=min_price,
+            max_price=max_price,
+            min_rating=min_rating,
+            sort_by=sort_by,
+        )
+
     def get_products_by_category(self, category_id: int):
         return self.product_repository.get_by_category(category_id)
 
