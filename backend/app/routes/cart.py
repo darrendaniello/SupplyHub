@@ -41,7 +41,16 @@ def cart_routes(rt):
 
                 cart_items.append(
                     Div(
+                        Input(
+                            type="checkbox",
+                            name="cart_item_id",
+                            value=str(item.id),
+                            form="checkout-form",
+                        ),
                         H3(product.name),
+                        P(
+                            f"Business: {item.product.business.business_name}"
+                        ),
                         P(
                             f"Price: {format_rupiah(product.selling_price)} / {product.unit}"
                         ),
@@ -100,7 +109,18 @@ def cart_routes(rt):
                 if cart_items
                 else None,
 
-                A("Proceed to checkout", href="/checkout"),
+                Form(
+                    Button(
+                        "Checkout selected items",
+                        type="submit",
+                    ),
+                    action="/checkout",
+                    method="get",
+                    id="checkout-form",
+                )
+                if cart_items
+                else None,
+
                 Br(),
                 A("My Orders", href="/orders"),
                 Br(),
@@ -291,67 +311,201 @@ def cart_routes(rt):
                     status_code=303,
                 )
 
+            # =========================
+            # Get selected cart items
+            # =========================
+
+            selected_item_ids = request.query_params.getlist(
+                "cart_item_id"
+            )
+
+            if not selected_item_ids:
+                return Titled(
+                    "Checkout - SupplyHub",
+                    H1("No Items Selected"),
+                    P(
+                        "Please select at least one item "
+                        "from your cart."
+                    ),
+                    A(
+                        "Back to cart",
+                        href="/cart",
+                    ),
+                )
+
+            try:
+                selected_item_ids = [
+                    int(item_id)
+                    for item_id in selected_item_ids
+                ]
+            except ValueError:
+                return Titled(
+                    "Checkout - SupplyHub",
+                    H1("Invalid Selection"),
+                    P(
+                        "Invalid cart item selection."
+                    ),
+                    A(
+                        "Back to cart",
+                        href="/cart",
+                    ),
+                )
+
+            # =========================
+            # Get user's cart
+            # =========================
+
             cart_service = CartService(session)
 
-            cart_result = cart_service.get_cart(int(user_id))
-            items = cart_result["items"]
+            cart = cart_service.cart_repository.get_cart_by_user(
+                int(user_id)
+            )
 
-            if not items:
+            if cart is None:
                 return Titled(
                     "Checkout - SupplyHub",
                     H1("Your cart is empty"),
-                    P("Add products to your cart before checkout."),
-                    A("Continue shopping", href="/products"),
+                    P(
+                        "Add products to your cart "
+                        "before checkout."
+                    ),
+                    A(
+                        "Continue shopping",
+                        href="/products",
+                    ),
                 )
 
-            total = 0
-            checkout_items=[]
+            # =========================
+            # Get selected items
+            # =========================
 
-            for item in items:
+            cart_items = cart_service.cart_repository.get_items_by_ids(
+                cart.id,
+                selected_item_ids,
+            )
+
+            if not cart_items:
+                return Titled(
+                    "Checkout - SupplyHub",
+                    H1("Selected items not found"),
+                    P(
+                        "The selected cart items "
+                        "could not be found."
+                    ),
+                    A(
+                        "Back to cart",
+                        href="/cart",
+                    ),
+                )
+
+            # =========================
+            # Calculate total
+            # =========================
+
+            total = 0
+            checkout_items = []
+
+            for item in cart_items:
                 product = item.product
-                subtotal = product.selling_price * item.quantity
+
+                if product is None:
+                    continue
+
+                subtotal = (
+                    product.selling_price * item.quantity
+                )
+
                 total += subtotal
 
                 checkout_items.append(
                     Div(
                         H3(product.name),
-                        P(f"Quantity: {item.quantity}"),
-                        P(f"Subtotal: {format_rupiah(subtotal)}"),
+
+                        P(
+                            f"Business: "
+                            f"{product.business.business_name}"
+                        ),
+
+                        P(
+                            f"Quantity: {item.quantity}"
+                        ),
+
+                        P(
+                            f"Subtotal: "
+                            f"{format_rupiah(subtotal)}"
+                        ),
                     )
                 )
 
+            # =========================
+            # Checkout page
+            # =========================
+
             return Titled(
                 "Checkout - SupplyHub",
+
                 H1("Checkout"),
+
                 H2("Order Summary"),
+
                 Div(
                     *checkout_items,
 
                     Hr(),
 
                     P(
-                        f"Total: {format_rupiah(total)}",
+                        f"Total: "
+                        f"{format_rupiah(total)}",
                         cls="checkout-total",
                     ),
                 ),
 
                 H2("Shipping Address"),
+
                 Form(
-                    Label("Shipping Address"),
+                    Label(
+                        "Shipping Address",
+                        for_="shipping_address",
+                    ),
+
                     Textarea(
                         name="shipping_address",
+                        id="shipping_address",
                         required=True,
                         placeholder="Enter your shipping address",
                     ),
-                    Button("Place Order"),
+
+                    # Preserve selected cart items
+                    Input(
+                        type="hidden",
+                        name="selected_item_ids",
+                        value=",".join(map(str, selected_item_ids)),
+                    ),
+
+                    Button(
+                        "Place Order",
+                        type="submit",
+                    ),
+
                     action="/checkout",
                     method="post",
                 ),
-                A("Back to cart", href="/cart"),
+
                 Br(),
-                A("My Orders", href="/orders"),
+
+                A(
+                    "Back to cart",
+                    href="/cart",
+                ),
+
+                Br(),
+
+                A(
+                    "My Orders",
+                    href="/orders",
+                ),
             )
-            
+
         finally:
             session.close()
 
@@ -359,6 +513,7 @@ def cart_routes(rt):
     def checkout_submit(
         request,
         shipping_address: str,
+        selected_item_ids: str,
     ):
         session = SessionLocal()
 
@@ -371,11 +526,34 @@ def cart_routes(rt):
                     status_code=303,
                 )
 
+            try:
+                cart_item_ids = [
+                    int(item_id)
+                    for item_id in selected_item_ids.split(",")
+                    if item_id
+                ]
+            except ValueError:
+                return Titled(
+                    "Checkout error - SupplyHub",
+                    H1("Checkout failed"),
+                    P("Invalid cart item selection."),
+                    A("Back to cart", href="/cart"),
+                )
+
+            if not cart_item_ids:
+                return Titled(
+                    "Checkout Error - SupplyHub",
+                    H1("Checkout failed"),
+                    P("No cart items selected."),
+                    A("Back to cart", href="/cart"),
+                )
+
             order_service = OrderService(session)
 
             order = order_service.create_order(
                 user_id=int(user_id),
                 shipping_address=shipping_address,
+                cart_item_ids=cart_item_ids,
             )
 
             session.commit()

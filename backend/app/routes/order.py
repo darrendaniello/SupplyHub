@@ -96,6 +96,18 @@ def order_routes(rt):
                     )
                 )
 
+            cancel_button = None
+
+            if order.status == "PENDING":
+                cancel_button = Form(
+                    Button(
+                        "Cancel Order",
+                        type="submit",
+                    ),
+                    method="post",
+                    action=f"/orders/{order.id}/cancel",
+                )
+
             return Titled(
                 f"Order #{order.id}",
                 H1(f"Order #{order.id}"),
@@ -139,6 +151,10 @@ def order_routes(rt):
 
                 Br(),
 
+                cancel_button,
+
+                Br(),
+
                 A("Back to orders", href="/orders"),
 
                 Br(),
@@ -152,6 +168,64 @@ def order_routes(rt):
                 H1("Unable to open order"),
                 P(str(error)),
                 A("Back to orders", href="/orders"),
+            )
+
+        finally:
+            session.close()
+
+    @rt("/orders/{order_id}/cancel", methods=["POST"])
+    def cancel_order(request, order_id: int):
+        session: Session = SessionLocal()
+
+        try:
+            user_id = request.session.get("user_id")
+
+            if not user_id:
+                return RedirectResponse(
+                    "/login",
+                    status_code=303,
+                )
+
+            order_service = OrderService(session)
+
+            order_service.cancel_order(
+                user_id=int(user_id),
+                order_id=order_id,
+            )
+
+            session.commit()
+
+            return RedirectResponse(
+                f"/orders/{order_id}",
+                status_code=303,
+            )
+
+        except ValueError as error:
+            session.rollback()
+
+            return Titled(
+                "Cancel Order Error",
+                H1("Unable to cancel order"),
+                P(str(error)),
+                A(
+                    "Back to Order Detail",
+                    href=f"/orders/{order_id}",
+                ),
+            )
+
+        except Exception as error:
+            session.rollback()
+
+            print("CANCEL ORDER ERROR:", repr(error))
+
+            return Titled(
+                "Cancel Order Error",
+                H1("Something went wrong"),
+                P("Unable to cancel this order."),
+                A(
+                    "Back to Order Detail",
+                    href=f"/orders/{order_id}",
+                ),
             )
 
         finally:

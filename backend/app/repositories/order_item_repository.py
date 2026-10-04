@@ -30,6 +30,23 @@ class OrderItemRepository:
 
         return self.session.scalars(stmt).all()
 
+    def has_user_purchased_product(
+            self,
+            user_id: int,
+            product_id: int,
+    ):
+        stmt = (
+            select(OrderItem)
+            .join(OrderItem.order)
+            .where(
+                OrderItem.product_id == product_id,
+                OrderItem.order.has(buyer_id = user_id)
+            )
+            .limit(1)
+        )
+
+        return self.session.scalar(stmt) is not None
+
     def create(
         self,
         order_id: int,

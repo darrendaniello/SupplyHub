@@ -64,6 +64,23 @@ class CartRepository:
 
         return self.session.scalars(stmt).all()
 
+    def get_items_by_ids(
+        self,
+        cart_id: int,
+        cart_item_ids: list[int],
+    ):
+        stmt = (
+            select(CartItem)
+            .options(joinedload(CartItem.product))
+            .where(
+                CartItem.cart_id == cart_id,
+                CartItem.id.in_(cart_item_ids),
+            )
+            .order_by(CartItem.id)
+        )
+    
+        return self.session.scalars(stmt).all()
+
     def get_item_by_cart_and_product(
         self,
         cart_id: int,

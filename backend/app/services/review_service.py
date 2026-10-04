@@ -1,11 +1,13 @@
 from sqlalchemy.orm import Session
 
 from app.repositories.review_repository import ReviewRepository
+from app.repositories.order_item_repository import OrderItemRepository
 
 
 class ReviewService:
     def __init__(self, session: Session):
         self.review_repository = ReviewRepository(session)
+        self.order_item_repository = OrderItemRepository(session)
 
     def get_product_reviews(self, product_id: int):
         return self.review_repository.get_by_product(product_id)
@@ -28,6 +30,18 @@ class ReviewService:
     ):
         if rating < 1 or rating > 5:
             raise ValueError("Rating must be between 1 and 5")
+
+        has_purchased = (
+            self.order_item_repository.has_user_purchased_product(
+                user_id = user_id,
+                product_id = product_id
+            )
+        )
+
+        if not has_purchased:
+            raise ValueError(
+                "You can only review products you have purchased"
+            )
 
         existing_review = (
             self.review_repository.get_by_user_and_by_product(

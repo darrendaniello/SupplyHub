@@ -214,7 +214,7 @@ def product_routes(rt):
         finally:
             session.close()
 
-    @rt("/products/{product_id}")
+    @rt("/products/{product_id}", methods=["GET"])
     def product_detail_page(product_id: int):
         session = SessionLocal()
 
@@ -290,6 +290,34 @@ def product_routes(rt):
                 )
                 if review_result
                 else P("No reviews yet."),
+
+                H2("Write a Review"),
+
+                Form(
+                    Label("Rating"),
+                    Input(
+                        type="number",
+                        name="rating",
+                        min="1",
+                        max="5",
+                        required=True,
+                    ),
+
+                    Label("Comment"),
+                    Textarea(
+                        name="comment",
+                        placeholder="Write your review...",
+                    ),
+
+                    Button(
+                        "Submit Review",
+                        type="submit",
+                    ),
+
+                    action=f"/products/{product.id}/reviews",
+                    method="post",
+                ),
+                
                 A("Back to products", href="/products"),
             )
 
@@ -301,5 +329,70 @@ def product_routes(rt):
                 A("Back to products", href="/products"),
             )
 
+        finally:
+            session.close()
+
+    @rt("/products/{product_id}/reviews", methods=["POST"])
+    def create_product_reviews(
+        request,
+        product_id: int,
+        rating: int,
+        comment: str = "",
+    ):
+        session = SessionLocal()
+
+        try:
+            user_id = request.session.get("user_id")
+
+            if not user_id:
+                return RedirectResponse(
+                    "/login",
+                    status_code=303,
+                )
+
+            review_service = ReviewService(session)
+
+            review_service.create_review(
+                user_id=int(user_id),
+                product_id=product_id,
+                rating=rating,
+                comment=comment,
+            )
+
+            session.commit()
+
+            return RedirectResponse(
+                f"/products/{product_id}",
+                status_code=303,
+            )
+        
+        except ValueError as error:
+            session.rollback()
+
+            return Titled(
+                "Review Error - SupplyHub",
+                H1("Unable to Submit Review"),
+                P(str(error)),
+                A(
+                    "Back to Product",
+                    href=f"/products/{product_id}",
+                ),
+            )
+        
+        except Exception as error:
+            session.rollback()
+
+            print("CREATE REVIEW ERROR: ", repr(error))
+
+            return Titled(
+               "Review Error - SupplyHub",
+                H1("Something went wrong"),
+                P("Unable to submit your review."),
+                A(
+                    "Back to Product",
+                    href=f"/products/{product_id}",
+                ), 
+            )
+        
         finally:
             session.close()
