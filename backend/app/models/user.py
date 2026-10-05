@@ -79,3 +79,9 @@ class User(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
+
+    addresses = relationship(
+        "UserAddress",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

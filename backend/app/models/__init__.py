@@ -1,4 +1,5 @@
 from app.models.user import User
+from app.models.user_address import UserAddress
 from app.models.business import Business
 from app.models.address import Address
 from app.models.category import Category
@@ -14,6 +15,7 @@ from app.models.cart import Cart, CartItem
 
 __all__ = [
     "User",
+    "UserAddress",
     "Business",
     "Address",
     "Category",
