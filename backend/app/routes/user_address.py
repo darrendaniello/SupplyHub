@@ -71,6 +71,11 @@ def user_address_routes(rt):
                         if not address.is_default
                         else None,
 
+                        A(
+                            "Edit",
+                            href=f"/profile/addresses/{address.id}/edit",
+                        ),
+
                         Form(
                             Button(
                                 "Delete",
@@ -288,6 +293,180 @@ def user_address_routes(rt):
                 method="post",
             ),
         )
+
+    @rt("/profile/addresses/{address_id}/edit", methods=["GET"])
+    def edit_address_page(request, address_id: int):
+        user_id = request.session.get("user_id")
+
+        if not user_id:
+            return RedirectResponse(
+                "/login",
+                status_code=303,
+            )
+
+        session = SessionLocal()
+
+        try:
+            service = UserAddressService(session)
+
+            address = service.get_address(
+                user_id=int(user_id),
+                address_id=address_id,
+            )
+
+            return Titled(
+                "Edit Address - SupplyHub",
+
+                H1("Edit Address"),
+
+                Form(
+                    Label("Label"),
+
+                    Input(
+                        name="label",
+                        value=address.label,
+                        required=True,
+                    ),
+
+                    Label("Recipient Name"),
+
+                    Input(
+                        name="recipient_name",
+                        value=address.recipient_name,
+                        required=True,
+                    ),
+
+                    Label("Phone Number"),
+
+                    Input(
+                        name="phone_number",
+                        type="tel",
+                        value=address.phone_number,
+                        required=True,
+                    ),
+
+                    Label("Address"),
+
+                    Textarea(
+                        address.address,
+                        name="address",
+                        required=True,
+                    ),
+
+                    Label(
+                        Input(
+                            type="checkbox",
+                            name="is_default",
+                            value="true",
+                            checked=address.is_default,
+                        ),
+                        " Set as default address",
+                    ),
+
+                    Br(),
+
+                    Button(
+                        "Save Changes",
+                        type="submit",
+                    ),
+
+                    A(
+                        "Cancel",
+                        href="/profile/addresses",
+                    ),
+
+                    action=f"/profile/addresses/{address.id}/edit",
+                    method="post",
+                ),
+            )
+
+        except ValueError as error:
+            return Titled(
+                "Address Error - SupplyHub",
+                H1("Address Error"),
+                P(str(error)),
+                A(
+                    "Back to addresses",
+                    href="/profile/addresses",
+                ),
+            )
+
+        finally:
+            session.close()
+
+    @rt("/profile/addresses/{address_id}/edit", methods=["POST"])
+    def update_address(
+        request,
+        address_id: int,
+        label: str,
+        recipient_name: str,
+        phone_number: str,
+        address: str,
+        is_default: str = "",
+    ):
+        user_id = request.session.get("user_id")
+
+        if not user_id:
+            return RedirectResponse(
+                "/login",
+                status_code=303,
+            )
+
+        session = SessionLocal()
+
+        try:
+            service = UserAddressService(session)
+
+            service.update_address(
+                user_id=int(user_id),
+                address_id=address_id,
+                label=label,
+                recipient_name=recipient_name,
+                phone_number=phone_number,
+                address=address,
+                is_default=is_default == "true",
+            )
+
+            session.commit()
+
+            return RedirectResponse(
+                "/profile/addresses",
+                status_code=303,
+            )
+
+        except ValueError as error:
+            session.rollback()
+
+            return Titled(
+                "Address Error - SupplyHub",
+                H1("Unable to update address"),
+                P(str(error)),
+                A(
+                    "Back to addresses",
+                    href="/profile/addresses",
+                ),
+            )
+
+        except Exception as error:
+            session.rollback()
+
+            print(
+                "UPDATE ADDRESS ERROR:",
+                repr(error),
+            )
+
+            return Titled(
+                "Address Error - SupplyHub",
+                H1("Address Error"),
+                P("An unexpected error occurred."),
+                A(
+                    "Back to addresses",
+                    href="/profile/addresses",
+                ),
+            )
+
+        finally:
+            session.close()
 
     @rt("/profile/addresses/new", methods=["POST"])
     def create_address(

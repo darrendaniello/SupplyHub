@@ -3,6 +3,7 @@ from fasthtml.common import *
 from app.database import SessionLocal
 from app.services.cart_service import CartService
 from app.services.order_service import OrderService
+from app.services.user_address_service import UserAddressService
 from app.utils.formatter import format_rupiah
 
 
@@ -352,6 +353,48 @@ def cart_routes(rt):
                 )
 
             # =========================
+            # Get user's addresses
+            # =========================
+
+            address_service = UserAddressService(session)
+            
+            addresses = address_service.get_user_addresses(
+                user_id=int(user_id)
+            )
+
+            if not addresses:
+                return Titled(
+                    "Checkout - SupplyHub",
+                    H1("Shipping Address Required"),
+                    P(
+                        "Please add a shipping address "
+                        "before proceeding to checkout."
+                    ),
+                    A(
+                        "Add New Address",
+                        href="/profile/addresses/new",
+                    ),
+                    Br(),
+                    A(
+                        "Back to cart",
+                        href="/cart",
+                    ),
+                )
+
+            # =========================
+            # Get default address
+            # =========================
+
+            default_address = next(
+                (
+                    address
+                    for address in addresses
+                    if address.is_default
+                ),
+                None,
+            )
+
+            # =========================
             # Get user's cart
             # =========================
 
@@ -464,23 +507,52 @@ def cart_routes(rt):
 
                 Form(
                     Label(
-                        "Shipping Address",
-                        for_="shipping_address",
+                        "Select Shipping Address",
+                        for_="address_id",
                     ),
 
-                    Textarea(
-                        name="shipping_address",
-                        id="shipping_address",
+                    Select(
+                        Option(
+                            "Select an address",
+                            value="",
+                            selected=default_address is None,
+                        ),
+
+                        *[
+                            Option(
+                                f"{address.label} - "
+                                f"{address.recipient_name} - "
+                                f"{address.address}",
+                                value=str(address.id),
+                                selected=(
+                                    default_address is not None
+                                    and address.id == default_address.id
+                                ),
+                            )
+                            for address in addresses
+                        ],
+
+                        name="address_id",
+                        id="address_id",
                         required=True,
-                        placeholder="Enter your shipping address",
                     ),
 
-                    # Preserve selected cart items
+                    Br(),
+
+                    A(
+                        "Manage My Addresses",
+                        href="/profile/addresses",
+                    ),
+
                     Input(
                         type="hidden",
                         name="selected_item_ids",
-                        value=",".join(map(str, selected_item_ids)),
+                        value=",".join(
+                            map(str, selected_item_ids)
+                        ),
                     ),
+
+                    Br(),
 
                     Button(
                         "Place Order",
@@ -512,7 +584,7 @@ def cart_routes(rt):
     @rt("/checkout", methods=["POST"])
     def checkout_submit(
         request,
-        shipping_address: str,
+        address_id: int,
         selected_item_ids: str,
     ):
         session = SessionLocal()
@@ -525,6 +597,13 @@ def cart_routes(rt):
                     "/login",
                     status_code=303,
                 )
+
+            address_service = UserAddressService(session)
+
+            address = address_service.get_address(
+                user_id=int(user_id),
+                address_id=address_id
+            )
 
             try:
                 cart_item_ids = [
@@ -552,7 +631,7 @@ def cart_routes(rt):
 
             order = order_service.create_order(
                 user_id=int(user_id),
-                shipping_address=shipping_address,
+                shipping_address=address.address,
                 cart_item_ids=cart_item_ids,
             )
 
