@@ -1,7 +1,8 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from geoalchemy2 import Geography
 
-from app.models import Business
+from app.models import Business, Address
 
 
 class BusinessRepository:
@@ -46,3 +47,40 @@ class BusinessRepository:
         )
 
         return self.session.scalars(stmt).all()
+
+    def get_nearby_businesses(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_km: float = 10,
+    ):
+        user_point = func.ST_SetSRID(
+            func.ST_MakePoint(longitude, latitude),
+            4326,
+        )
+
+        distance = func.ST_Distance(
+            Address.geom.cast(Geography),
+            user_point.cast(Geography),
+        )
+
+        stmt = (
+            select(
+                Business,
+                (distance / 1000).label("distance_km"),
+            )
+            .join(
+                Address,
+                Address.business_id == Business.id,
+            )
+            .where(
+                func.ST_DWithin(
+                    Address.geom.cast(Geography),
+                    user_point.cast(Geography),
+                    radius_km * 1000,
+                )
+            )
+            .order_by(distance)
+        )
+
+        return self.session.execute(stmt).all()
