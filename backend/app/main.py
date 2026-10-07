@@ -6,6 +6,7 @@ from app.routes.cart import cart_routes
 from app.routes.order import order_routes
 from app.routes.favorite import favorite_routes
 from app.routes.user_address import user_address_routes
+from app.routes.ai import ai_routes
 
 app, rt = fast_app(secret_key="supplyhub-secret-key")
 
@@ -30,6 +31,8 @@ def home():
         Br(),
         A("User Addresses", href="/profile/addresses"),
         Br(),
+        A("AI Forecast", href="/ai/forecast"),
+        Br(),
         A("Logout", href="/logout"),
     )
 
@@ -40,3 +43,4 @@ cart_routes(rt)
 order_routes(rt)
 favorite_routes(rt)
 user_address_routes(rt)
+ai_routes(rt)

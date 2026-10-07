@@ -65,7 +65,21 @@ def get_forecast(nama_komoditas: str):
     except FileNotFoundError:
         raise HTTPException(status_code=500, detail="Database historis tidak ditemukan.")
 
-    df_barang = df_historis[df_historis['komoditas'].str.contains(nama_komoditas, case=False)]
+    komoditas_match = df_historis[
+    df_historis["komoditas"].apply(slugify) == nama_komoditas
+    ]
+
+    if komoditas_match.empty:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Komoditas dengan slug '{nama_komoditas}' tidak ditemukan."
+        )
+
+    nama_komoditas_asli = komoditas_match.iloc[0]["komoditas"]
+
+    df_barang = df_historis[
+        df_historis["komoditas"] == nama_komoditas_asli
+    ]
     
     if df_barang.empty:
         raise HTTPException(status_code=404, detail=f"Komoditas '{nama_komoditas}' tidak ditemukan di pasar.")
@@ -112,6 +126,42 @@ def get_forecast(nama_komoditas: str):
         },
         "forecast_7_hari": daftar_prediksi
     }
+
+def slugify(text: str) -> str:
+    return re.sub(
+        r"[^a-z0-9]+",
+        "-",
+        text.lower()
+    ).strip("-")
+
+@app.get("/api/commodities")
+def get_commodities():
+    try:
+        df_historis = pd.read_csv(DATASET_PATH)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=500,
+            detail="Database historis tidak ditemukan."
+        )
+
+    commodities = (
+        df_historis["komoditas"]
+        .dropna()
+        .drop_duplicates()
+        .tolist()
+    )
+
+    result = []
+
+    for commodity in commodities:
+        slug = slugify(commodity)
+
+        result.append({
+            "name": commodity,
+            "slug": slug
+        })
+
+    return result
 
 # =====================================================================
 # 4. SUPER ENDPOINT: NLP & GEOSPATIAL ORCHESTRATION
